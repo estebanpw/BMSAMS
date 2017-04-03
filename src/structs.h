@@ -19,6 +19,7 @@
 //#define POOL_SIZE 2500000000 // by 16 bytes it is 40 GB
 #define POOL_SIZE 12500000 // 1 GB if 16 bytes
 #define MAX_MEM_POOLS 256 
+#define MAX_MULTIPLE_ALIGN 32
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) <= (y)) ? (x) : (y))
 
@@ -94,8 +95,8 @@ typedef struct{
     Queue * head;
 } Head;
 
-typedef struct two_seqs{
-    char * s1;
-    char * s2;
-} Two_seqs;
+typedef struct all_seqs{
+    uint64_t i[MAX_MULTIPLE_ALIGN];
+    uint64_t j[MAX_MULTIPLE_ALIGN];
+} All_seqs;
 #endif

@@ -11,21 +11,13 @@
 
 void pile_chars_up(char ** list_seq_X, char ** list_seq_Y, char * list_piled_X, char * list_piled_Y, uint64_t nx, uint64_t ny, uint64_t posx, uint64_t posy){
     uint64_t i;
-    uint64_t index;
-    for(i=0;i<nx;i++){
-        list_piled_X[i][index] = list_seq_X[i][posx];
-        index++;
-    }
-    index = 0;
-    for(i=0;i<ny;i++){
-        list_piled_Y[i][index] = list_seq_Y[i][posy];
-        index++;
-    }
+    for(i=0;i<nx;i++) list_piled_X[i] = list_seq_X[i][posx];
+    for(i=0;i<ny;i++) list_piled_Y[i] = list_seq_Y[i][posy];
 }
 
 int64_t compare_piled_up_chars(char * list_piled_X, char * list_piled_Y, uint64_t nx, uint64_t ny){
 
-    if(n == 1) return compare_letters(list_piled_X[0], list_piled_Y[0]);
+    if(nx == 1 && ny == 1) return compare_letters(list_piled_X[0], list_piled_Y[0]);
 
     uint64_t i;
     int64_t acum = 0;
@@ -73,7 +65,7 @@ uint64_t get_max_length_of_sequences(char ** a, uint64_t n_x){
     uint64_t len;
     uint64_t i;
     for(i=0;i<n_x;i++){
-        len = strlen(seq_piles_up_X[i]);
+        len = strlen(a[i]);
         if(len > max_len) max_len = len;
     }
     return max_len;
@@ -93,83 +85,51 @@ void build_unanchored_alignment(int64_t * cell_path_y, char ** seq_piles_up_X, c
 
 
 
-Two_seqs build_multiple_alignment(char * reconstruct_X, char * reconstruct_Y, char ** my_x, char ** my_y, uint64_t nx, uint64_t ny, struct cell ** table, struct positioned_cell * mc, char * writing_buffer_alignment, uint64_t xlen, uint64_t ylen, int64_t * cell_path_y, long double * window, int64_t iGap, int64_t eGap, BasicAlignment * ba){
+All_seqs build_multiple_alignment(char ** reconstruct_X, char ** reconstruct_Y, char ** my_x, char ** my_y, uint64_t nx, uint64_t ny, struct cell ** table, struct positioned_cell * mc, char * writing_buffer_alignment, uint64_t xlen, uint64_t ylen, int64_t * cell_path_y, long double * window, int64_t iGap, int64_t eGap, BasicAlignment * ba, char * aux){
  
 
     //Do some printing of alignments here
-    uint64_t maximum_len, i, j, curr_pos_buffer, curr_window_size;
-
-    maximum_len = 2*MAX(get_max_length_of_sequences(my_x, nx), get_max_length_of_sequences(my_y, ny));
+    uint64_t i, j, k, curr_window_size;
+    All_seqs as;
     
     struct best_cell bc = NW(my_x, 0, xlen, my_y, 0, ylen, iGap, eGap, table, mc, 0, cell_path_y, window, &curr_window_size, nx, ny);
-    backtrackingNW(my_x, 0, xlen, my_y, 0, ylen, table, reconstruct_X, reconstruct_Y, &bc, &i, &j, cell_path_y, curr_window_size, ba);
-    uint64_t offset = 0, before_i = 0, before_j = 0;
-    i++; j++;
 
+    uint64_t max_len = MAX(xlen, ylen);
+
+    for(k=0;k<nx;k++){
+        backtrackingNW(my_x[k], 0, xlen, my_x[k], 0, ylen, table, reconstruct_X[k], aux, &bc, &i, &j, cell_path_y, curr_window_size, ba);
+        i++; j++;
+        fprintf(stdout, "%s\n", &reconstruct_X[k][i]);
+        memcpy(&my_x[k][0], &reconstruct_X[k][i], max_len);
+    }
+
+
+    for(k=0;k<ny;k++){
+        backtrackingNW(my_y[k], 0, xlen, my_y[k], 0, ylen, table, aux, reconstruct_Y[k], &bc, &i, &j, cell_path_y, curr_window_size, ba);
+        i++; j++;    
+        fprintf(stdout, "%s\n", &reconstruct_Y[k][j]);
+        memcpy(&my_y[k][0], &reconstruct_Y[k][j], max_len);
+    }
+
+    
+    //backtrackingNW(my_x, 0, xlen, my_y, 0, ylen, table, reconstruct_X, reconstruct_Y, &bc, &i, &j, cell_path_y, curr_window_size, ba, nx, ny);
+    //uint64_t offset = 0, before_i = 0, before_j = 0;
+    //i++; j++;
+
+    
+
+
+    
+
+    
+
+    /*
     Two_seqs ts;
     ts.s1 = &reconstruct_X[i];
     ts.s2 = &reconstruct_Y[j];
-    
-    #ifdef VERBOSE
-    uint64_t z=0;
-    for(z=0;z<maximum_len;z++) printf("%c", reconstruct_X[z]);
-    printf("\n");
-    for(z=0;z<maximum_len;z++) printf("%c", reconstruct_Y[z]);
-    #endif
-    
-    curr_pos_buffer = 0;
-    while(i <= maximum_len && j <= maximum_len){
-        offset = 0;
-        before_i = i;
-        writing_buffer_alignment[curr_pos_buffer++] = 'D';
-        writing_buffer_alignment[curr_pos_buffer++] = '\t';
-        while(offset < ALIGN_LEN && i <= maximum_len){
-            //fprintf(stdout, "%c", reconstruct_X[i]);
-            writing_buffer_alignment[curr_pos_buffer++] = (char) reconstruct_X[i];
-            i++;
-            offset++;
-        }
-        //fprintf(out, "\n");
-        
-        writing_buffer_alignment[curr_pos_buffer++] = '\n';
-        offset = 0;
-        before_j = j;
-        
-        //fprintf(stdout, "\n");
+    */
 
-        writing_buffer_alignment[curr_pos_buffer++] = 'Q';
-        writing_buffer_alignment[curr_pos_buffer++] = '\t';
-
-        while(offset < ALIGN_LEN && j <= maximum_len){
-            //fprintf(stdout, "%c", reconstruct_Y[j]);
-            writing_buffer_alignment[curr_pos_buffer++] = (char) reconstruct_Y[j];
-            j++;
-            offset++;
-        }
-        //fprintf(out, "\n");
-        writing_buffer_alignment[curr_pos_buffer++] = '\n';
-        writing_buffer_alignment[curr_pos_buffer++] = ' ';
-        writing_buffer_alignment[curr_pos_buffer++] = '\t';
-        while(before_i < i){
-            if(reconstruct_X[before_i] != '-' && reconstruct_Y[before_j] != '-' && reconstruct_X[before_i] == reconstruct_Y[before_j]){
-                //fprintf(out, "*");
-                writing_buffer_alignment[curr_pos_buffer++] = '*';
-                ba->identities++;
-            }else{
-                //fprintf(out, " ");
-                writing_buffer_alignment[curr_pos_buffer++] = ' ';
-            }
-            before_j++;
-            before_i++;
-        }
-        writing_buffer_alignment[curr_pos_buffer++] = '\n';
-
-    }
-    //fprintf(out, "\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
-    writing_buffer_alignment[curr_pos_buffer++] = '\n';
-    writing_buffer_alignment[curr_pos_buffer++] = '\0';
-
-    return ts;
+    return as;
 
 }
 
@@ -292,13 +252,14 @@ struct best_cell NW(char ** X, uint64_t Xstart, uint64_t Xend, char ** Y, uint64
         //table[0][i].score = (X[0] == Y[i]) ? POINT : -POINT;
         if(i < cell_path_y[0] + window_size){
             pile_chars_up(X, Y, list_piled_X, list_piled_Y, nx, ny, 0, i);
-            table[0][i].score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny);
+            table[0][i].score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny) + iGap + (i-1)*eGap;
             //table[0][i].score = compare_letters(X[0], Y[i]) + iGap + (i-1)*eGap;
         } 
         //table[Xstart][i].xfrom = Xstart;
         //table[Xstart][i].yfrom = i;
         //Set every column max
-        mc[i].score = compare_letters(X[0], Y[i]) + iGap + (i-1)*eGap;
+        
+        mc[i].score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny) + iGap + (i-1)*eGap;
         #ifdef VERBOSE
         printf("%02"PRId64" ", mc[i].score);
         #endif
@@ -325,10 +286,13 @@ struct best_cell NW(char ** X, uint64_t Xstart, uint64_t Xend, char ** Y, uint64
 
         //table[i][0].score = (X[i] == Y[0]) ? POINT : -POINT;
         if(cell_path_y[i] - window_size <= 0){
-            table[i][0].score = compare_letters(X[i], Y[0]) + iGap + (i-1)*eGap;
+            pile_chars_up(X, Y, list_piled_X, list_piled_Y, nx, ny, i, 0);
+            table[i][0].score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny) + iGap + (i-1)*eGap;
+            //table[i][0].score = compare_letters(X[i], Y[0]) + iGap + (i-1)*eGap;
             mf.score = table[i][0].score;
         }else{
-            mf.score = compare_letters(X[i], Y[0]) + iGap + (i-1)*eGap;
+            pile_chars_up(X, Y, list_piled_X, list_piled_Y, nx, ny, i, 0);
+            mf.score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny) + iGap + (i-1)*eGap;
         }
 
         mf.xpos = i-1;
@@ -382,7 +346,9 @@ struct best_cell NW(char ** X, uint64_t Xstart, uint64_t Xend, char ** Y, uint64
             //printf("RowMax: %"PRId64"@(%"PRIu64", %"PRIu64")\t", mf.score, mf.xpos, mf.ypos);
             
             //score = (X[i] == Y[j]) ? POINT : -POINT;
-            score = compare_letters(X[i], Y[j]);
+            pile_chars_up(X, Y, list_piled_X, list_piled_Y, nx, ny, i, j);
+            score = compare_piled_up_chars(list_piled_X, list_piled_Y, nx, ny);
+            //score = compare_letters(X[i], Y[j]);
 
             //Precondition: Upper row needs to reach up to diagonal
             //if((cell_path_y[i-1]+window_size) >= j-1){

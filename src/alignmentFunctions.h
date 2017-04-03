@@ -27,7 +27,7 @@ void build_unanchored_alignment(int64_t * cell_path_y, char ** seq_piles_up_X, c
 /*
     Performs NW and backtracking to recover alignment
 */
-Two_seqs build_multiple_alignment(char * reconstruct_X, char * reconstruct_Y, char ** my_x, char ** my_y, uint64_t nx, uint64_t ny, struct cell ** table, struct positioned_cell * mc, char * writing_buffer_alignment, uint64_t xlen, uint64_t ylen, int64_t * cell_path_y, long double * window, int64_t iGap, int64_t eGap, BasicAlignment * ba);
+All_seqs build_multiple_alignment(char ** reconstruct_X, char ** reconstruct_Y, char ** my_x, char ** my_y, uint64_t nx, uint64_t ny, struct cell ** table, struct positioned_cell * mc, char * writing_buffer_alignment, uint64_t xlen, uint64_t ylen, int64_t * cell_path_y, long double * window, int64_t iGap, int64_t eGap, BasicAlignment * ba, char * aux);
 
 
 /*
