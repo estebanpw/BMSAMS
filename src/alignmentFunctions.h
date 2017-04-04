@@ -19,6 +19,11 @@ inline int64_t compare_letters(char a, char b);
     Gets the maximum length of a group of sequences
 */
 uint64_t get_max_length_of_sequences(char ** a, uint64_t n_x);
+
+/*
+    Returns the position in the array of the longest sequence
+*/
+uint64_t get_id_of_longest_sequence(char ** a, uint64_t n_x);
 /*
     Builds a cellpath of diagonal steps for a bounded NW when no frags are available
 */

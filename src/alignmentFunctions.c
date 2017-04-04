@@ -71,6 +71,18 @@ uint64_t get_max_length_of_sequences(char ** a, uint64_t n_x){
     return max_len;
 }
 
+uint64_t get_id_of_longest_sequence(char ** a, uint64_t n_x){
+    uint64_t max_len = 0;
+    uint64_t max_id = 0;
+    uint64_t len;
+    uint64_t i;
+    for(i=0;i<n_x;i++){
+        len = strlen(a[i]);
+        if(len > max_len) { max_len = len; max_id = i; }
+    }
+    return max_id;
+}
+
 
 void build_unanchored_alignment(int64_t * cell_path_y, char ** seq_piles_up_X, char ** seq_piles_up_Y, uint64_t n_x, uint64_t n_y){
 
@@ -95,21 +107,27 @@ All_seqs build_multiple_alignment(char ** reconstruct_X, char ** reconstruct_Y, 
     struct best_cell bc = NW(my_x, 0, xlen, my_y, 0, ylen, iGap, eGap, table, mc, 0, cell_path_y, window, &curr_window_size, nx, ny);
 
     uint64_t max_len = MAX(xlen, ylen);
+    uint64_t pos_longest_X = get_id_of_longest_sequence(my_x, nx);
+    uint64_t pos_longest_Y = get_id_of_longest_sequence(my_y, ny);
+    char * reference;
+    if(strlen(my_x[pos_longest_X]) > strlen(my_y[pos_longest_Y])) reference = my_x[pos_longest_X]; else reference = my_y[pos_longest_Y];
 
+    printf("Max len for round %"PRIu64"\n", max_len);
     for(k=0;k<nx;k++){
-        backtrackingNW(my_x[k], 0, xlen, my_x[k], 0, ylen, table, reconstruct_X[k], aux, &bc, &i, &j, cell_path_y, curr_window_size, ba);
+        backtrackingNW(my_x[k], 0, xlen, reference, 0, max_len, table, reconstruct_X[k], aux, &bc, &i, &j, cell_path_y, curr_window_size, ba);
         i++; j++;
-        fprintf(stdout, "%s\n", &reconstruct_X[k][i]);
-        memcpy(&my_x[k][0], &reconstruct_X[k][i], max_len);
+        //fprintf(stdout, "X:%"PRIu64" -> %s\n", k, &reconstruct_X[k][i]);
+        memcpy(&my_x[k][0], &reconstruct_X[k][i], strlen(&reconstruct_X[k][i]));
     }
 
-
+    
     for(k=0;k<ny;k++){
-        backtrackingNW(my_y[k], 0, xlen, my_y[k], 0, ylen, table, aux, reconstruct_Y[k], &bc, &i, &j, cell_path_y, curr_window_size, ba);
+        backtrackingNW(reference, 0, max_len, my_y[k], 0, ylen, table, aux, reconstruct_Y[k], &bc, &i, &j, cell_path_y, curr_window_size, ba);
         i++; j++;    
-        fprintf(stdout, "%s\n", &reconstruct_Y[k][j]);
-        memcpy(&my_y[k][0], &reconstruct_Y[k][j], max_len);
+        //fprintf(stdout, "Y:%"PRIu64" -> %s\n", k, &reconstruct_Y[k][j]);
+        memcpy(&my_y[k][0], &reconstruct_Y[k][j], strlen(&reconstruct_Y[k][i]));
     }
+    
 
     
     //backtrackingNW(my_x, 0, xlen, my_y, 0, ylen, table, reconstruct_X, reconstruct_Y, &bc, &i, &j, cell_path_y, curr_window_size, ba, nx, ny);
@@ -426,6 +444,8 @@ struct best_cell NW(char ** X, uint64_t Xstart, uint64_t Xend, char ** Y, uint64
             	}
                 //Check for best cell
                 if(table[i][j_prime].score >= bc.c.score){ bc.c.score = table[i][j_prime].score; bc.c.xpos = i; bc.c.ypos = j; bc.j_prime = j_prime; }
+                // Forcing global
+                //bc.c.score = table[i][j_prime].score; bc.c.xpos = i; bc.c.ypos = j; bc.j_prime = j_prime;
             }
             #ifdef VERBOSE
             //printf("Put score: %"PRId64"\n\n", table[i][j_prime].score);
@@ -459,7 +479,9 @@ void backtrackingNW(char * X, uint64_t Xstart, uint64_t Xend, char * Y, uint64_t
     #endif
     prev_x = curr_x;
     prev_y = curr_y;
-   
+    printf("Optimum : %"PRIu64", %"PRIu64"\n", curr_x, curr_y);
+    printf("Xend: %"PRIu64", YEnd: %"PRIu64"\n", Xend-1, Yend-1);
+
     for(k=Xend-1; k>curr_x; k--) rec_X[head_x--] = '-';
     for(k=Yend-1; k>curr_y; k--) rec_Y[head_y--] = '-';
 
@@ -475,7 +497,8 @@ void backtrackingNW(char * X, uint64_t Xstart, uint64_t Xend, char * Y, uint64_t
 
             prev_x = curr_x;
             prev_y = curr_y;
-
+            
+            
             #ifdef VERBOSE
             //printf("Jprime: %"PRId64" :DELTADIF:%"PRId64"\n", j_prime, delta_diff);
             printf("[%c %c]", X[prev_x], Y[prev_y]);
@@ -498,28 +521,34 @@ void backtrackingNW(char * X, uint64_t Xstart, uint64_t Xend, char * Y, uint64_t
         if((curr_x == (prev_x - 1)) && (curr_y == (prev_y -1))){
             //Diagonal case
             //printf("DIAG\n");
-            rec_X[head_x--] = (char) X[prev_x];
-            rec_Y[head_y--] = (char) Y[prev_y];
+            rec_X[head_x--] = X[prev_x];
+            rec_Y[head_y--] = Y[prev_y];
             ba->length++;
             
         }else if((prev_x - curr_x) > (prev_y - curr_y)){
             //Gap in X
             //printf("Gap X\n");
+            rec_Y[head_y--] = Y[prev_y];
+            rec_X[head_x--] = X[prev_x];
             for(k=prev_x-1;k>curr_x;k--){
                 rec_Y[head_y--] = '-';
-                rec_X[head_x--] = (char) X[k];
+                rec_X[head_x--] = X[k];
                 ba->length++;
                 ba->egaps++;
             }
+            
             ba->igaps += 1;
             ba->egaps--;
         }else{
             //Gap in Y
             //printf("GAP Y\n");
             //10, 0, 401, 281
+            rec_Y[head_y--] = Y[prev_y];
+            rec_X[head_x--] = X[prev_x];
             for(k=prev_y-1;k>curr_y;k--){
                 rec_X[head_x--] = '-';
-                rec_Y[head_y--] = (char) Y[k];
+                rec_Y[head_y--] = Y[k];
+                
                 ba->length++;
                 ba->egaps++;
             }
@@ -529,8 +558,8 @@ void backtrackingNW(char * X, uint64_t Xstart, uint64_t Xend, char * Y, uint64_t
         
     }
     if(curr_x == 0 && curr_y == 0){
-        rec_X[head_x--] = (char) X[prev_x];
-        rec_Y[head_y--] = (char) Y[prev_y];
+        rec_X[head_x--] = (char) X[curr_x];
+        rec_Y[head_y--] = (char) Y[curr_y];
         ba->length++;
     }
     
